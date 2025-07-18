@@ -1,3 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Parental Monitor</title>
+
+  <!-- iOS PWA Config -->
+  <link rel="apple-touch-icon" href="icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- Web App Manifest -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Register Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
+
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 20px; }
+    input, button { padding: 10px; margin: 5px; font-size: 16px; }
+  </style>
+</head>
+<body>
+
+  <h2>🔐 Parental Monitor</h2>
+  <p>Keys Pressed: <span id="keyCount">0</span></p>
+
+  <div id="login">
+    <input type="password" id="pinInput" placeholder="Enter PIN" />
+    <button onclick="unlock()">Unlock</button>
+    <p id="loginStatus"></p>
+  </div>
+
+  <div id="secureArea" style="display: none;">
+    <button onclick="resetCount()">Reset</button>
+    <button onclick="lock()">Lock</button>
+  </div>
+  <div style="margin-top: 20px;">
+  <h3>Key Log</h3>
+  <ul id="keyLog" style="text-align: left; max-height: 200px; overflow-y: auto;"></ul>
+  <button onclick="exportCSV()">📄 Export CSV</button>
+</div>
+ <div style="margin-top: 20px;">
+  <h3>Replay Typing</h3>
+  <button onclick="replayTyping()">▶️ Replay</button>
+  <div id="replayOutput" style="margin-top: 10px; background: #eee; padding: 10px; font-family: monospace; min-height: 50px;"></div>
+</div> 
+
+  <script>
+    const PIN = "1234";
+    let keyCount = parseInt(localStorage.getItem("keyCount") || "0");
+    document.addEventListener("keydown", () => {
+      keyCount++;
+      localStorage.setItem("keyCount", keyCount);
+    });
+
+    function unlock() {
+      const inputPin = document.getElementById("pinInput").value;
+      if (inputPin === PIN) {
+        document.getElementById("login").style.display = "none";
+        document.getElementById("secureArea").style.display = "block";
+        document.getElementById("keyCount").textContent = keyCount;
+      } else {
+        document.getElementById("loginStatus").textContent = "❌ Incorrect PIN";
+      }
+    }
+
+    function resetCount() {
+      keyCount = 0;
+      localStorage.setItem("keyCount", 0);
+      document.getElementById("keyCount").textContent = "0";
+    }
+
+    function lock() {
+      document.getElementById("secureArea").style.display = "none";
+      document.getElementById("login").style.display = "block";
+      document.getElementById("loginStatus").textContent = "";
+      document.getElementById("pinInput").value = "";
+    }
+  <script>
+  // ... your existing functions above ...
+
+  function replayTyping() {
+    const output = document.getElementById("replayOutput");
+    output.textContent = "";
+
+    if (keyLog.length === 0) {
+      output.textContent = "No keys to replay.";
+      return;
+    }
+
+    let i = 0;
+    function step() {
+      if (i >= keyLog.length) return;
+
+      const key = keyLog[i].key;
+      output.textContent += key === " " ? "␣" : key;
+
+      const currentTime = new Date(keyLog[i].time).getTime();
+      const nextTime = keyLog[i + 1] ? new Date(keyLog[i + 1].time).getTime() : currentTime;
+      const delay = Math.min(nextTime - currentTime, 1000); // cap to 1s max delay
+
+      i++;
+      setTimeout(step, delay);
+    }
+
+    step();
+  }
 <script>
   const PIN = "1234";
   let keyCount = parseInt(localStorage.getItem("keyCount") || "0");
@@ -72,7 +185,7 @@
     a.click();
     URL.revokeObjectURL(url);
   }
-</script>
+</script>  
 
 </body>
-</h
+</html>
