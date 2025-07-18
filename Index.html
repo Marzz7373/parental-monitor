@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Parental Monitor</title>
+
+  <!-- iOS PWA Config -->
+  <link rel="apple-touch-icon" href="icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- Web App Manifest -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Register Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
+
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 20px; }
+    input, button { padding: 10px; margin: 5px; font-size: 16px; }
+  </style>
+</head>
+<body>
+
+  <h2>🔐 Parental Monitor</h2>
+  <p>Keys Pressed: <span id="keyCount">0</span></p>
+
+  <div id="login">
+    <input type="password" id="pinInput" placeholder="Enter PIN" />
+    <button onclick="unlock()">Unlock</button>
+    <p id="loginStatus"></p>
+  </div>
+
+  <div id="secureArea" style="display: none;">
+    <button onclick="resetCount()">Reset</button>
+    <button onclick="lock()">Lock</button>
+  </div>
+
+  <script>
+    const PIN = "1234";
+    let keyCount = parseInt(localStorage.getItem("keyCount") || "0");
+    document.addEventListener("keydown", () => {
+      keyCount++;
+      localStorage.setItem("keyCount", keyCount);
+    });
+
+    function unlock() {
+      const inputPin = document.getElementById("pinInput").value;
+      if (inputPin === PIN) {
+        document.getElementById("login").style.display = "none";
+        document.getElementById("secureArea").style.display = "block";
+        document.getElementById("keyCount").textContent = keyCount;
+      } else {
+        document.getElementById("loginStatus").textContent = "❌ Incorrect PIN";
+      }
+    }
+
+    function resetCount() {
+      keyCount = 0;
+      localStorage.setItem("keyCount", 0);
+      document.getElementById("keyCount").textContent = "0";
+    }
+
+    function lock() {
+      document.getElementById("secureArea").style.display = "none";
+      document.getElementById("login").style.display = "block";
+      document.getElementById("loginStatus").textContent = "";
+      document.getElementById("pinInput").value = "";
+    }
+  </script>
+
+</body>
+</html>
