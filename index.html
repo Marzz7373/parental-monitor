@@ -5,20 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Parental Monitor</title>
 
-  <!-- iOS PWA Config -->
   <link rel="apple-touch-icon" href="icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
-  <!-- Web App Manifest -->
   <link rel="manifest" href="manifest.json">
-
-  <!-- Register Service Worker -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js');
-    }
-  </script>
 
   <style>
     body { font-family: sans-serif; text-align: center; padding: 20px; }
@@ -28,6 +18,137 @@
 <body>
 
   <h2>🔐 Parental Monitor</h2>
+  <p>Keys Pressed: <span id="keyCount">0</span></p>
+
+  <div id="login">
+    <input type="password" id="pinInput" placeholder="Enter PIN" />
+    <button onclick="unlock()">Unlock</button>
+    <p id="loginStatus"></p>
+  </div>
+
+  <div id="secureArea" style="display: none;">
+    <button onclick="resetCount()">Reset</button>
+    <button onclick="lock()">Lock</button>
+
+    <div style="margin-top: 20px;">
+      <h3>Key Log</h3>
+      <ul id="keyLog" style="text-align: left; max-height: 200px; overflow-y: auto;"></ul>
+      <button onclick="exportCSV()">📄 Export CSV</button>
+    </div>
+
+    <div style="margin-top: 20px;">
+      <h3>Replay Typing</h3>
+      <button onclick="replayTyping()">▶️ Replay</button>
+      <div id="replayOutput" style="margin-top: 10px; background: #eee; padding: 10px; font-family: monospace; min-height: 50px;"></div>
+    </div>
+  </div>
+
+  <script>
+    const PIN = "1234";
+    let keyCount = parseInt(localStorage.getItem("keyCount") || "0");
+    let keyLog = JSON.parse(localStorage.getItem("keyLog") || "[]");
+
+    document.addEventListener("keydown", (e) => {
+      keyCount++;
+      const logEntry = {
+        key: e.key,
+        time: new Date().toISOString()
+      };
+      keyLog.push(logEntry);
+      localStorage.setItem("keyCount", keyCount);
+      localStorage.setItem("keyLog", JSON.stringify(keyLog));
+
+      const list = document.getElementById("keyLog");
+      if (list && document.getElementById("secureArea").style.display === "block") {
+        const li = document.createElement("li");
+        li.textContent = `${logEntry.time} — ${logEntry.key}`;
+        list.appendChild(li);
+      }
+    });
+
+    function unlock() {
+      const inputPin = document.getElementById("pinInput").value;
+      if (inputPin === PIN) {
+        document.getElementById("login").style.display = "none";
+        document.getElementById("secureArea").style.display = "block";
+        document.getElementById("keyCount").textContent = keyCount;
+        loadKeyLog();
+      } else {
+        document.getElementById("loginStatus").textContent = "❌ Incorrect PIN";
+      }
+    }
+
+    function resetCount() {
+      keyCount = 0;
+      keyLog = [];
+      localStorage.setItem("keyCount", 0);
+      localStorage.setItem("keyLog", "[]");
+      document.getElementById("keyCount").textContent = "0";
+      document.getElementById("keyLog").innerHTML = "";
+      document.getElementById("replayOutput").textContent = "";
+    }
+
+    function lock() {
+      document.getElementById("secureArea").style.display = "none";
+      document.getElementById("login").style.display = "block";
+      document.getElementById("loginStatus").textContent = "";
+      document.getElementById("pinInput").value = "";
+    }
+
+    function loadKeyLog() {
+      const list = document.getElementById("keyLog");
+      list.innerHTML = "";
+      keyLog.forEach(entry => {
+        const li = document.createElement("li");
+        li.textContent = `${entry.time} — ${entry.key}`;
+        list.appendChild(li);
+      });
+    }
+
+    function exportCSV() {
+      const csvRows = [["Time", "Key"]];
+      keyLog.forEach(({ time, key }) => {
+        csvRows.push([time, key]);
+      });
+      const csv = csvRows.map(row => row.join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "key_log.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function replayTyping() {
+      const output = document.getElementById("replayOutput");
+      output.textContent = "";
+
+      if (keyLog.length === 0) {
+        output.textContent = "No keys to replay.";
+        return;
+      }
+
+      let i = 0;
+      function step() {
+        if (i >= keyLog.length) return;
+
+        const key = keyLog[i].key;
+        output.textContent += key === " " ? "␣" : key;
+
+        const currentTime = new Date(keyLog[i].time).getTime();
+        const nextTime = keyLog[i + 1] ? new Date(keyLog[i + 1].time).getTime() : currentTime;
+        const delay = Math.min(nextTime - currentTime, 1000); // max delay of 1s
+
+        i++;
+        setTimeout(step, delay);
+      }
+
+      step();
+    }
+  </script>
+</body>
+</html>
   <p>Keys Pressed: <span id="keyCount">0</span></p>
 
   <div id="login">
